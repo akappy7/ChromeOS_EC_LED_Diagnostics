@@ -378,6 +378,29 @@ void demo_tap(void)
 	lightbar_sequence(LIGHTBAR_TAP);
 }
 
+void my_led_flash(void){
+	int angle =0;
+	angle = my_lid_angle(1);
+	if (angle < 95 || angle > 85)
+	{
+		lb_set_rgb(0, 200, 0, 200);
+		lb_set_rgb(1, 255, 255, 255);
+		lb_set_rgb(2, 200, 0, 200);
+		lb_set_rgb(3, 255, 255, 255);
+	}
+	else
+	{
+		lb_set_rgb(0, 0x34, 0x70, 0xb4);
+		lb_set_rgb(1, 0xbc, 0x50, 0x2c);
+		lb_set_rgb(2, 0xd0, 0xe0, 0x00);
+		lb_set_rgb(3, 0x50, 0xa0, 0x40);
+	}
+
+}
+
+
+DECLARE_HOOK(HOOK_SECOND, my_led_flash, HOOK_PRIO_DEFAULT);
+
 /******************************************************************************/
 /* Helper functions and data. */
 /******************************************************************************/

@@ -45,6 +45,7 @@ enum sensor_config {
 #define ROUND_UP_FLAG (1 << 31)
 #define BASE_ODR(_odr) ((_odr) & ~ROUND_UP_FLAG)
 
+
 struct motion_data_t {
 	/*
 	 * data rate the sensor will measure, in mHz: 0 suspended.
@@ -160,6 +161,8 @@ void accel_int_lid(enum gpio_signal signal);
  */
 void accel_int_base(enum gpio_signal signal);
 #endif
+
+int my_lid_angle(int a);
 
 #ifdef CONFIG_ACCEL_FIFO
 extern struct queue motion_sense_fifo;
