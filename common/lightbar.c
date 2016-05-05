@@ -209,6 +209,16 @@ test_export_static int google_color_id;
 
 static int demo_mode = DEMO_MODE_DEFAULT;
 
+//==================Arman==============
+static int state0 = 1;
+static int state1 = 0;
+static int state2 = 0;
+static int state3 = 0;
+static int state4 = 0;
+static int count = 0;
+static int start_count = 0;//begin time limit to enter debugging
+static int end_count = 0;//flag to terminate enterance to debugging
+
 static int quantize_battery_level(int pct)
 {
 	int i, bl = 0;
@@ -381,20 +391,91 @@ void demo_tap(void)
 void my_led_flash(void){
 	int angle =0;
 	angle = my_lid_angle(1);
-	if (angle < 93 && angle > 87)
-	{
-		lb_set_rgb(0, 200, 0, 200);
-		lb_set_rgb(1, 255, 255, 255);
-		lb_set_rgb(2, 200, 0, 200);
-		lb_set_rgb(3, 255, 255, 255);
+	CPRINTS("==========ANGLE: %d======", angle);
+
+	if(start_count){
+		count=count+1;
 	}
-	else
+	if ((angle < 50 && angle > 40 && state0) || state1)
+	{
+		state0=0;
+		state1=1;
+		start_count = 1;
+		end_count = 1;
+		lb_set_rgb(0, 0x34, 0x70, 0xb4);
+		lb_set_rgb(1, 0,0, 0);
+		lb_set_rgb(2, 0,0, 0);
+		lb_set_rgb(3, 0,0, 0);
+	}//enter state 1
+	if ((angle < 95 && angle > 85 && state1) || state2){
+		state2 = 1;
+		lb_set_rgb(0, 0x34, 0x70, 0xb4);
+		lb_set_rgb(1, 0xbc, 0x50, 0x2c);
+		lb_set_rgb(2, 0,0, 0);
+		lb_set_rgb(3, 0,0, 0);
+	}
+	if ((angle < 50 && angle > 40 && state2) || state3 ){
+		state3 = 1;
+		lb_set_rgb(0, 0x34, 0x70, 0xb4);
+		lb_set_rgb(1, 0xbc, 0x50, 0x2c);
+		lb_set_rgb(2, 0xd0, 0xe0, 0x00);
+		lb_set_rgb(3, 0, 0, 0);
+	}
+	if ((angle < 95 && angle > 85 && state3) || state4){
+		state1=0;
+		state2=0;
+		state3=0;
+		state4=1;
+		end_count = 0;
+		if( (count % 2)  == 1){
+			lb_set_rgb(0, 200, 0, 200);
+			lb_set_rgb(1, 255, 255, 255);
+			lb_set_rgb(2, 200, 0, 200);
+			lb_set_rgb(3, 255, 255, 255);
+		}
+		else{
+			lb_set_rgb(0, 255, 255, 255);
+			lb_set_rgb(1,  200, 0, 200);
+			lb_set_rgb(2, 255, 255, 255);
+			lb_set_rgb(3,  200, 0, 200);
+		}
+	}
+	if(state0)
 	{
 		lb_set_rgb(0, 0x34, 0x70, 0xb4);
 		lb_set_rgb(1, 0xbc, 0x50, 0x2c);
 		lb_set_rgb(2, 0xd0, 0xe0, 0x00);
 		lb_set_rgb(3, 0x50, 0xa0, 0x40);
 	}
+	if(count > 5 && end_count){
+		CPRINTS("======RESET=========");
+		count = 0;
+		state0=1;
+		state1 = 0;
+		state2=0;
+		state3=0;
+		state4=0;
+		start_count= 0;
+		end_count = 0;
+		lb_set_rgb(0, 0xbc, 0x50, 0x2c);
+		lb_set_rgb(1, 0xbc, 0x50, 0x2c);
+		lb_set_rgb(2, 0xbc, 0x50, 0x2c);
+		lb_set_rgb(3, 0xbc, 0x50, 0x2c);
+	}//times up, must reset
+	if(angle > 130){
+		count = 0;
+		state0=1;
+		state1 = 0;
+		state2 = 0;
+		state3 = 0;
+		state4 = 0;
+		start_count = 0;
+		end_count = 0;
+		lb_set_rgb(0, 0x50, 0xa0, 0x40);
+		lb_set_rgb(1, 0x50, 0xa0, 0x40);
+		lb_set_rgb(2, 0x50, 0xa0, 0x40);
+		lb_set_rgb(3, 0x50, 0xa0, 0x40);
+	}//reset debug mode
 
 }
 
