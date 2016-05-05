@@ -381,7 +381,7 @@ void demo_tap(void)
 void my_led_flash(void){
 	int angle =0;
 	angle = my_lid_angle(1);
-	if (angle < 95 || angle > 85)
+	if (angle < 93 && angle > 87)
 	{
 		lb_set_rgb(0, 200, 0, 200);
 		lb_set_rgb(1, 255, 255, 255);
