@@ -25,11 +25,9 @@
 #include "task.h"
 #include "timer.h"
 #include "util.h"
-#include "queue.h"
+#include "queue.h" // weidong & delcan
 #endif
-
 extern struct queue ucd_lb_queue;
-
 /*
  * The Link lightbar had no version command, so defaulted to zero. We have
  * added a couple of new commands, so we've updated the version. Any
@@ -212,7 +210,6 @@ test_export_static int google_color_id;
 
 static int demo_mode = DEMO_MODE_DEFAULT;
 
-
 static int quantize_battery_level(int pct)
 {
 	int i, bl = 0;
@@ -381,223 +378,6 @@ void demo_tap(void)
 		return;
 	lightbar_sequence(LIGHTBAR_TAP);
 }
-
-/* ===================Weidong & Delcan ===================*/
-#define BLINK_BLOCK_SIZE 80
-#define BLINK_DELAY 100 * MSEC
-struct {
-	char byte;
-	int bitsProcessed;
-	int bytesProcessed;
-	char escaped;
-	char bytes[BLINK_BLOCK_SIZE+3];
-} blink_state = {0, 0 , BLINK_BLOCK_SIZE+3,0};
-
-static void my_blink_from_queue(void){
-	static size_t unitremoved = BLINK_BLOCK_SIZE;
-	static size_t count = 3;
-
-	if(blink_state.bytesProcessed == unitremoved+3){
-		if(count >= 3){
-			count = 0;
-			unitremoved = queue_remove_units(&ucd_lb_queue, (void*)blink_state.bytes+2, BLINK_BLOCK_SIZE);
-		}
-		blink_state.bytes[0] = '\xaa';
-		blink_state.bytes[1] = '\xaa';
-		blink_state.bytes[unitremoved+2] = '\xc0';
-		blink_state.byte = blink_state.bytes[0];
-		blink_state.bytesProcessed = 0;
-		count++;
-	}
-
-	if(blink_state.bitsProcessed == 8){
-
-		blink_state.bytesProcessed++;
-
-		if(blink_state.bytesProcessed >= unitremoved + 3){
-			blink_state.byte = 0;
-			blink_state.bitsProcessed = 0;
-			blink_state.bytesProcessed = unitremoved+3;
-			blink_state.escaped = 0;
-			goto callhook;
-		}
-
-
-		blink_state.byte = blink_state.bytes[blink_state.bytesProcessed];
-
-
-		if( blink_state.escaped )
-		{
-			blink_state.byte = blink_state.escaped;
-			blink_state.escaped = 0;
-			blink_state.bytesProcessed--;
-		}//for first two sync bytes and last end mark bytes
-		else if(!(blink_state.bytesProcessed < 2 || blink_state.bytesProcessed == unitremoved+2) )
-		{
-
-			if(blink_state.byte == '\xaa')
-			{
-				blink_state.escaped = '\x51';
-				blink_state.byte = '\xdb';
-			}
-			else if (blink_state.byte == '\xc0')
-			{
-				blink_state.escaped = '\x50';
-				blink_state.byte = '\xdb';
-			}
-			else if (blink_state.byte == '\xdb')
-			{
-				blink_state.escaped = '\x52';
-				blink_state.byte = '\xdb';
-			}
-		}			
-		
-		blink_state.bitsProcessed = 0;
-	}
-	
-    if(blink_state.byte & 0x80){
-      lb_set_rgb(0, 255, 255, 255);
-  	  lb_set_rgb(1, 255, 255, 255);
-  	  lb_set_rgb(2, 255, 255, 255);
-  	  lb_set_rgb(3, 255, 255, 255);
-  	}
-    else{
-      lb_set_rgb(0, 0, 0, 0);
-  	  lb_set_rgb(1, 0, 0, 0);
-  	  lb_set_rgb(2, 0, 0, 0);
-  	  lb_set_rgb(3, 0, 0, 0);
-    }
-  	blink_state.bitsProcessed++;
-    blink_state.byte = blink_state.byte << 1;   
-	 	
-callhook:
-   	hook_call_deferred(my_blink_from_queue, BLINK_DELAY);
-}
-
-DECLARE_DEFERRED(my_blink_from_queue); 
-
-//==================Arman==============
-
-static int state0 = 1;
-static int state1 = 0;
-static int state2 = 0;
-static int state3 = 0;
-static int state4 = 0;
-static int count = 0;
-static int start_count = 0;//begin time limit to enter debugging
-static int end_count = 0;//flag to terminate enterance to debugging
-
-
-void my_led_flash(void){
-	static short blinkingModeEntered = 0;
-	int angle =0;
-	angle = my_lid_angle(1);
-	//CPRINTS("==========ANGLE: %d======", angle);
-	/*if(angle <= 90 && !blinkingModeEntered){
-		 blinkingModeEntered = 1;
-		 hook_call_deferred(my_blink_from_queue, BLINK_DELAY);
-	}
-	else if( angle >90){
-		hook_call_deferred(my_blink_from_queue, -1); //cancel deferred call
-		blinkingModeEntered = 0;
-	}*/
-	
-	if(start_count){
-		count=count+1;
-	}
-	if ((angle < 60 && angle > 30 && state0) || state1)
-	{
-		state0=0;
-		state1=1;
-		start_count = 1;
-		end_count = 1;
-		lb_set_rgb(0, 0x34, 0x70, 0xb4);
-		lb_set_rgb(1, 0,0, 0);
-		lb_set_rgb(2, 0,0, 0);
-		lb_set_rgb(3, 0,0, 0);
-	}//enter state 1
-	if ((angle < 95 && angle > 85 && state1) || state2){
-		state2 = 1;
-		lb_set_rgb(0, 0x34, 0x70, 0xb4);
-		lb_set_rgb(1, 0xbc, 0x50, 0x2c);
-		lb_set_rgb(2, 0,0, 0);
-		lb_set_rgb(3, 0,0, 0);
-	}
-	if ((angle < 60 && angle > 30 && state2) || state3 ){
-		state3 = 1;
-		lb_set_rgb(0, 0x34, 0x70, 0xb4);
-		lb_set_rgb(1, 0xbc, 0x50, 0x2c);
-		lb_set_rgb(2, 0xd0, 0xe0, 0x00);
-		lb_set_rgb(3, 0, 0, 0);
-	}
-	if ( ( (angle < 95 && angle > 85 && state3) || state4 ) && !blinkingModeEntered ){
-		state1=0;
-		state2=0;
-		state3=0;
-		state4=1;
-		end_count = 0;
-		/*
-		if( (count % 2)  == 1){
-			lb_set_rgb(0, 200, 0, 200);
-			lb_set_rgb(1, 255, 255, 255);
-			lb_set_rgb(2, 200, 0, 200);
-			lb_set_rgb(3, 255, 255, 255);
-		}
-		else{
-			lb_set_rgb(0, 255, 255, 255);
-			lb_set_rgb(1,  200, 0, 200);
-			lb_set_rgb(2, 255, 255, 255);
-			lb_set_rgb(3,  200, 0, 200);
-		}*/
-		blinkingModeEntered = 1;
-		hook_call_deferred(my_blink_from_queue, BLINK_DELAY);
-	}
-	if(state0)
-	{
-		lb_set_rgb(0, 0x34, 0x70, 0xb4);
-		lb_set_rgb(1, 0xbc, 0x50, 0x2c);
-		lb_set_rgb(2, 0xd0, 0xe0, 0x00);
-		lb_set_rgb(3, 0x50, 0xa0, 0x40);
-	}
-	if(count > 5 && end_count){
-		CPRINTS("======RESET=========");
-		count = 0;
-		state0=1;
-		state1 = 0;
-		state2=0;
-		state3=0;
-		state4=0;
-		start_count= 0;
-		end_count = 0;
-		lb_set_rgb(0, 0xbc, 0x50, 0x2c);
-		lb_set_rgb(1, 0xbc, 0x50, 0x2c);
-		lb_set_rgb(2, 0xbc, 0x50, 0x2c);
-		lb_set_rgb(3, 0xbc, 0x50, 0x2c);
-	}//times up, must reset
-	if(angle > 130){
-		count = 0;
-		state0=1;
-		state1 = 0;
-		state2 = 0;
-		state3 = 0;
-		state4 = 0;
-		start_count = 0;
-		end_count = 0;
-		
-		lb_set_rgb(0, 0x50, 0xa0, 0x40);
-		lb_set_rgb(1, 0x50, 0xa0, 0x40);
-		lb_set_rgb(2, 0x50, 0xa0, 0x40);
-		lb_set_rgb(3, 0x50, 0xa0, 0x40);
-		
-		hook_call_deferred(my_blink_from_queue, -1); //cancel deferred call
-		blinkingModeEntered = 0;
-	}//reset debug mode
-	
-}
-
-
-DECLARE_HOOK(HOOK_SECOND, my_led_flash, HOOK_PRIO_DEFAULT);
-
 
 /******************************************************************************/
 /* Helper functions and data. */
@@ -1882,7 +1662,7 @@ void lightbar_task(void)
 void lightbar_sequence_f(enum lightbar_sequence num, const char *f)
 {
 	if (num > 0 && num < LIGHTBAR_NUM_SEQUENCES) {
-		CPRINTS("LB %s() requests %d %s", f, num,
+		CPRINTS("LB %s() requests %d %s >>>>>>>>>>>>>>>>>WEIDONG HERE", f, num,
 			lightbar_cmds[num].string);
 		pending_msg = num;
 		task_set_event(TASK_ID_LIGHTBAR,
@@ -1894,6 +1674,24 @@ void lightbar_sequence_f(enum lightbar_sequence num, const char *f)
 
 /****************************************************************************/
 /* Get notifications from other parts of the system */
+
+/* weidong added */
+/*
+static void myBlinkingSequence(void){
+	CPRINTS("<>===================<> myBlinkingSequnce()\n");
+	lb_set_rgb(0, 255, 255, 255); //white
+	lb_set_rgb(1, 200, 0, 200); //purple
+	lb_set_rgb(2, 0 , 200, 200);  //cyan
+}*/
+//DECLARE_HOOK(HOOK_SECOND, myBlinkingSequence, HOOK_PRIO_DEFAULT);
+
+/* end of weidong added */
+
+void blinkFromQueue(void){
+	char c;
+	queue_remove_unit(&ucd_lb_queue, (void *)&c);
+}
+
 
 static uint8_t manual_suspend_control;
 
@@ -1908,6 +1706,7 @@ static void lightbar_resume(void)
 {
 	if (!manual_suspend_control)
 		lightbar_sequence(LIGHTBAR_S3S0);
+
 }
 DECLARE_HOOK(HOOK_CHIPSET_RESUME, lightbar_resume, HOOK_PRIO_DEFAULT);
 
@@ -1920,9 +1719,11 @@ DECLARE_HOOK(HOOK_CHIPSET_SUSPEND, lightbar_suspend, HOOK_PRIO_DEFAULT);
 
 static void lightbar_shutdown(void)
 {
+	CPRINTS("weidongguo>>>>>>>>>>>>>>>>>>>>\n");
 	lightbar_sequence(LIGHTBAR_S3S5);
 }
 DECLARE_HOOK(HOOK_CHIPSET_SHUTDOWN, lightbar_shutdown, HOOK_PRIO_DEFAULT);
+
 
 /****************************************************************************/
 /* Host commands via LPC bus */
@@ -2296,3 +2097,4 @@ DECLARE_CONSOLE_COMMAND(lightbar, command_lightbar,
 			"[help | COMMAND [ARGS]]",
 			"Get/set lightbar state",
 			NULL);
+

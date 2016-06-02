@@ -86,6 +86,7 @@ static int motion_sense_fifo_lost;
 
 static void motion_sense_insert_timestamp(void);
 
+
 void motion_sense_fifo_add_unit(struct ec_response_motion_sensor_data *data,
 				struct motion_sensor_t *sensor,
 				int valid_data)
@@ -573,6 +574,13 @@ static inline void update_sense_data(uint8_t *lpc_status,
 	*lpc_status = EC_MEMMAP_ACC_STATUS_PRESENCE_BIT | *psample_id;
 }
 #endif
+
+//============Arman================
+int my_lid_angle(int a){
+	int num;
+	num = (int)motion_lid_get_angle();
+	return num;
+}
 
 static int motion_sense_read(struct motion_sensor_t *sensor)
 {

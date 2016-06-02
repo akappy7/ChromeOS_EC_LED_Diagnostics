@@ -79,6 +79,9 @@ enum console_channel {
 /* Mask to use to enable all channels */
 #define CC_ALL			0xffffffffUL
 
+/* Weidong & Jon */
+void ucd_lb_queue_init(void);
+
 /**
  * Put a string to the console channel.
  *

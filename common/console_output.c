@@ -10,6 +10,11 @@
 #include "usb_console.h"
 #include "util.h"
 
+#include "printf.h"
+#include "queue.h" // sfor storing all the console outputs for blinking - Weidong
+struct queue ucd_lb_queue = QUEUE_NULL(1024, uint8_t); // - Weidong & Jon
+
+
 /* Default to all channels active */
 #ifndef CC_DEFAULT
 #define CC_DEFAULT CC_ALL
@@ -79,12 +84,36 @@ BUILD_ASSERT(ARRAY_SIZE(channel_names) == CC_CHANNEL_COUNT);
 /* ensure that we are not silently masking additional channels */
 BUILD_ASSERT(CC_CHANNEL_COUNT <= 8*sizeof(uint32_t));
 
-/*****************************************************************************/
+/* Weidong and Jon */
+
+void ucd_lb_queue_init(void){
+	queue_init(&ucd_lb_queue);
+}
+
+int ucd_lb_queue_puts(const char *outstr){
+	queue_add_units(&ucd_lb_queue, (const void*)outstr, strlen(outstr));
+	return EC_SUCCESS;
+}
+
+int ucd_lb_queue_put(void *context, int c){
+	queue_add_units(&ucd_lb_queue, (const void*)&c, 1);
+	return EC_SUCCESS;
+}
+
+char ucd_lb_queue_pop(void){
+	char c;
+	queue_remove_unit(&ucd_lb_queue, &c);
+	return c;
+}
+
+/* End of Weidong and Jon */
+
+/******************************i***********************************************/
 /* Channel-based console output */
 
 int cputs(enum console_channel channel, const char *outstr)
 {
-	int rv1, rv2;
+	int rv1, rv2; //char buffer[2];
 
 	/* Filter out inactive channels */
 	if (!(CC_MASK(channel) & channel_mask))
@@ -92,7 +121,15 @@ int cputs(enum console_channel channel, const char *outstr)
 
 	rv1 = usb_puts(outstr);
 	rv2 = uart_puts(outstr);
-
+	/* Weidong and Jon */
+	ucd_lb_queue_puts(outstr);
+	/*
+	while( !queue_is_empty(&ucd_lb_queue) ){
+		buffer[0] = ucd_lb_queue_pop();
+		buffer[1] = 0;
+		uart_puts(buffer);
+	}*/
+	/* end of weidong and jon */
 	return rv1 == EC_SUCCESS ? rv2 : rv1;
 }
 
@@ -100,6 +137,7 @@ int cprintf(enum console_channel channel, const char *format, ...)
 {
 	int rv1, rv2;
 	va_list args;
+	//char buffer[2];
 
 	/* Filter out inactive channels */
 	if (!(CC_MASK(channel) & channel_mask))
@@ -109,7 +147,16 @@ int cprintf(enum console_channel channel, const char *format, ...)
 	rv1 = usb_vprintf(format, args);
 	usb_va_end(args);
 
+
+	
 	va_start(args, format);
+	vfnprintf(ucd_lb_queue_put, NULL, format, args);
+	/*
+	while( !queue_is_empty(&ucd_lb_queue) ){
+		buffer[0] = ucd_lb_queue_pop();
+		buffer[1] = 0;
+		uart_puts(buffer);
+	}*/
 	rv2 = uart_vprintf(format, args);
 	va_end(args);
 
@@ -119,7 +166,8 @@ int cprintf(enum console_channel channel, const char *format, ...)
 int cprints(enum console_channel channel, const char *format, ...)
 {
 	int r, rv;
-	va_list args;
+	va_list args; 
+	//char buffer[2];
 
 	/* Filter out inactive channels */
 	if (!(CC_MASK(channel) & channel_mask))
@@ -129,6 +177,13 @@ int cprints(enum console_channel channel, const char *format, ...)
 
 	va_start(args, format);
 	r = uart_vprintf(format, args);
+	vfnprintf(ucd_lb_queue_put, NULL, format, args);
+	/*while( !queue_is_empty(&ucd_lb_queue) ){
+		buffer[0] = ucd_lb_queue_pop();
+		buffer[1] = 0;
+		uart_puts(buffer);
+	} */
+
 	if (r)
 		rv = r;
 	va_end(args);

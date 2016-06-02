@@ -13,6 +13,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <fcntl.h> //for open()
 
 #include "battery.h"
 #include "comm-host.h"
@@ -6512,8 +6513,58 @@ int cmd_pd_write_log(int argc, char *argv[])
 	return ec_command(EC_CMD_PD_WRITE_LOG_ENTRY, 0, &p, sizeof(p), NULL, 0);
 }
 
+/* Wei and Jon */
+int lightbar_set_rgb(int led, int r, int g, int b){
+	struct ec_params_lightbar param;
+	struct ec_response_lightbar resp;
+	param.set_rgb.led = led;
+	param.set_rgb.red = r;//strtoul(argv[2], &e, 16);
+	param.set_rgb.green = g;//strtoul(argv[3], &e, 16);
+	param.set_rgb.blue = b;//strtoul(argv[4], &e, 16);
+	return lb_do_cmd(LIGHTBAR_CMD_SET_RGB, &param, &resp);
+}
+
+int cmd_auto_blink(int argc, char *argv[]){
+const int BLOCK_SIZE = 512;
+  int fd, i,j, bytesRead, delay = 100000; //100ms delay by default
+  char buffer[BLOCK_SIZE], byte; 
+
+  fprintf(stdout, "Auto blink\n");
+  if(argc < 2){ 
+    printf("Please provide the file");
+    return -1; 
+  }
+  else if (argc >= 3){ //setting the delay
+    delay = atoi(argv[2]) * 1000; 
+  }
+
+  fd = open(argv[1], O_RDONLY);
+  if(fd == -1){
+    printf("Cannot open the file\n");
+    return -1; 
+  }
+
+  while( (bytesRead = read(fd, buffer, BLOCK_SIZE)) > 0){ //for each block
+    //printf("bytesRead: %d\n", bytesRead);
+    for( j = 0;  j < bytesRead; j++) { //for each char/byte       
+      byte = buffer[j];
+      for(i = 0 ; i < 8; i++){ //for each bit
+        if(byte & 0x80)
+          lightbar_set_rgb(0, 0xff, 0xff, 0xff);
+        else
+          lightbar_set_rgb(0, 0, 0, 0); 
+        byte = byte << 1;  
+        usleep(delay);
+      }   
+    }   
+  }
+  close(fd);
+  return 0;
+}
+
 /* NULL-terminated list of commands */
 const struct command commands[] = {
+	{"autoblink", cmd_auto_blink},
 	{"autofanctrl", cmd_thermal_auto_fan_ctrl},
 	{"backlight", cmd_lcd_backlight},
 	{"battery", cmd_battery},
@@ -6700,3 +6751,5 @@ out:
 	release_gec_lock();
 	return !!rv;
 }
+
+

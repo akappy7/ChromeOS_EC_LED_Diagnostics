@@ -50,7 +50,7 @@ static void lid_switch_open(void)
 		return;
 	}
 
-	CPRINTS("lid open");
+	CPRINTS("lid open <weidongguo>$$$$$$$$$$$$$$$$$$$$$$$$$$.");
 	debounced_lid_open = 1;
 	hook_notify(HOOK_LID_CHANGE);
 	host_set_single_event(EC_HOST_EVENT_LID_OPEN);
@@ -66,7 +66,7 @@ static void lid_switch_close(void)
 		return;
 	}
 
-	CPRINTS("lid close");
+	CPRINTS("lid close <weidongguo>$$$$$$$$$$$$$$$$$$$$$$$$$$$.");
 	debounced_lid_open = 0;
 	hook_notify(HOOK_LID_CHANGE);
 	host_set_single_event(EC_HOST_EVENT_LID_CLOSED);

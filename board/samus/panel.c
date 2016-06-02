@@ -181,6 +181,16 @@ static void update_backlight(void)
 }
 DECLARE_HOOK(HOOK_LID_CHANGE, update_backlight, HOOK_PRIO_DEFAULT);
 
+
+/*===========weidong added===========*/
+static void printstmt(void){
+
+		CPRINTS(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><>LID is touched");
+}
+
+DECLARE_HOOK(HOOK_LID_CHANGE, printstmt, HOOK_PRIO_DEFAULT);
+/*======================*/
+
 /**
  * Initialize backlight module.
  */

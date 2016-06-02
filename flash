@@ -1,0 +1,1 @@
+flash_ec --board=samus --image=build/samus/ec.bin

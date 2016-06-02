@@ -118,13 +118,14 @@ test_mockable __keep int main(void)
 #endif
 
 	/* Initialize UART.  Console output functions may now be used. */
+	ucd_lb_queue_init(); // weidong & jon
 	uart_init();
 
 	if (system_jumped_to_this_image()) {
 		CPRINTS("UART initialized after sysjump");
 	} else {
 		CPUTS("\n\n--- UART initialized after reboot ---\n");
-		CPUTS("[Reset cause: ");
+		CPUTS("[Reset cause (Weidong Conquered]: ");
 		system_print_reset_flags();
 		CPUTS("]\n");
 	}
